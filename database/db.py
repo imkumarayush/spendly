@@ -52,6 +52,21 @@ def create_user(name, email, password):
     except sqlite3.IntegrityError:
         return False
 
+
+def get_user_by_email(email):
+    conn = get_db()
+    user = conn.execute("SELECT * FROM users WHERE email = ?", (email.strip().lower(),)).fetchone()
+    conn.close()
+    return user
+
+
+def get_user_by_id(user_id):
+    conn = get_db()
+    user = conn.execute("SELECT * FROM users WHERE id = ?", (user_id,)).fetchone()
+    conn.close()
+    return user
+
+
 def seed_db():
     conn = get_db()
     count = conn.execute("SELECT COUNT(*) FROM users").fetchone()[0]
