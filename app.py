@@ -1,6 +1,7 @@
 from flask import Flask, render_template, request, redirect, url_for, session
 from werkzeug.security import check_password_hash
 from database.db import get_db, init_db, seed_db, create_user, get_user_by_email, get_user_by_id
+from database.queries import get_user_by_id as get_profile_user, get_recent_transactions, get_summary_stats, get_category_breakdown
 
 app = Flask(__name__)
 app.secret_key = "spendly-dev-secret-key-change-in-production"
@@ -126,29 +127,23 @@ def profile():
     if not session.get("user_id"):
         return redirect(url_for("login"))
 
+    user_id = session["user_id"]
+    user_info = get_profile_user(user_id)
+
+    if not user_info:
+        return redirect(url_for("login"))
+
+    stats = get_summary_stats(user_id)
+    transactions = get_recent_transactions(user_id)
+    categories = get_category_breakdown(user_id)
+
     profile_data = {
-        "name": "Demo User",
-        "email": "demo@spendly.com",
-        "joined": "August 2026",
-        "stats": {
-            "total_spent": "₹358.24",
-            "transaction_count": 8,
-            "top_category": "Bills",
-        },
-        "transactions": [
-            {"date": "2026-08-18", "description": "Miscellaneous", "category": "Other", "amount": "₹20.00"},
-            {"date": "2026-08-15", "description": "Lunch with friends", "category": "Food", "amount": "₹12.75"},
-            {"date": "2026-08-12", "description": "New headphones", "category": "Shopping", "amount": "₹89.99"},
-            {"date": "2026-08-10", "description": "Movie tickets", "category": "Entertainment", "amount": "₹30.00"},
-            {"date": "2026-08-07", "description": "Pharmacy", "category": "Health", "amount": "₹45.00"},
-        ],
-        "categories": [
-            {"name": "Bills", "total": "₹120.00", "percent": 33},
-            {"name": "Shopping", "total": "₹89.99", "percent": 25},
-            {"name": "Health", "total": "₹45.00", "percent": 13},
-            {"name": "Entertainment", "total": "₹30.00", "percent": 8},
-            {"name": "Food", "total": "₹38.25", "percent": 11},
-        ],
+        "name": user_info["name"],
+        "email": user_info["email"],
+        "joined": user_info["member_since"],
+        "stats": stats,
+        "transactions": transactions,
+        "categories": categories,
     }
 
     return render_template("profile.html", profile=profile_data)
